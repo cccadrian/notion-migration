@@ -3,7 +3,6 @@ dotenv.config();
 import axios from "axios";
 import notion from "./notionClient.js";
 import { iteratePaginatedAPI } from "@notionhq/client";
-import { appendBlockChildren } from "@notionhq/client/build/src/api-endpoints.js";
 
 async function createUser() {
 	return userData;
@@ -28,15 +27,8 @@ async function fetchNotionDatabases(databases) {
 					},
 				},
 			)) {
-				// Do something with block.
-				// console.log(teamUser, pageNumber);
-				pageNumber = pageNumber + 1;
-				// console.log(teamUser.id);
-				// console.log(teamUser.properties);
-				// console.log(teamUser.properties["Goes by"].rich_text[0]);
-				// console.log(teamUser.properties["Birthday"].date);
 				console.log(teamUser.properties["Name"].title[0].plain_text);
-				// console.log(teamUser.properties["Pic"]);
+
 				const userData = {
 					first_name:
 						teamUser.properties["Name"].title[0].plain_text.split(
@@ -49,14 +41,19 @@ async function fetchNotionDatabases(databases) {
 					email: teamUser.properties["CCC Email"].email,
 					password: "cccareer$",
 				};
-				if (teamUser.properties["Personal Email"].email !== undefined) {
-					// console.log(teamUser.properties["Personal Email"].email);
-					userData.birthday =
-						teamUser.properties["Personal Email"].email;
-				}
-				if (teamUser.properties["Birthday"].date !== undefined) {
+
+				// if (teamUser.properties["Personal Email"].email !== undefined) {
+				// 	// console.log(teamUser.properties["Personal Email"].email);
+				// 	userData.birthday =
+				// 		teamUser.properties["Personal Email"].email;
+				// }
+				if (
+					teamUser.properties["Birthday"].date !== undefined &&
+					teamUser.properties["Birthday"].date !== null
+				) {
 					// console.log(teamUser.properties["Birthday"].date);
-					userData.birthday = teamUser.properties["Birthday"].date;
+					userData.birthday =
+						teamUser.properties["Birthday"].date.start;
 				}
 				if (
 					teamUser.properties["Goes by"].rich_text[0] !== undefined &&
@@ -83,20 +80,91 @@ async function fetchNotionDatabases(databases) {
 					userData.email = `mail-${teamUser.id}@email.com`;
 				}
 				//find user in directus
-				// console.log(userData);
 				const userExists = await findDirectusUser(
 					"users",
 					userData.email,
 				);
+
 				let directusUser;
-				console.log(userExists[0]);
+
 				if (userExists[0] === undefined) {
-					directusUser = await findDirectusUser("users", {
-						email: {
-							_eq: userData.email,
+					// const missingUsers = [
+					// 	"yahshemi@cccareers.org",
+					// 	"alex@cccareers.org",
+					// 	"tenille@cccareers.org",
+					// 	"navroz@cccareers.org",
+					// ];
+					// if (
+					// 	missingUsers.includes(
+					// 		teamUser.properties["CCC Email"].email,
+					// 	)
+					// ) {
+					// 	console.log(
+					// 		"Found it.",
+					// 		teamUser.properties["CCC Email"].email,
+					// 	);
+					// 	console.log("Problematic user data:", userData);
+					// }
+					userData.notion_id = teamUser.id;
+					directusUser = await createDirectusRecord(
+						"users",
+						userData,
+					);
+
+					// console.log(directusUser);
+					const notionDemographics = await notion.databases.query({
+						database_id: "d6b4c1c6576d45c5bf877b23ea34dc47",
+						filter: {
+							property: "Team",
+							relation: {
+								contains: teamUser.id,
+							},
 						},
 					});
+					// console.log("notion demographics ", notionDemographics);
+					if (
+						notionDemographics.results !== undefined &&
+						notionDemographics.results.length > 0
+					) {
+						const demographicsData = notionDemographics.results[0];
+						const directusDemographics = await createDirectusRecord(
+							"demographics",
+							{
+								state: demographicsData.properties["State"]
+									.select.name,
+								zip_code:
+									demographicsData.properties["Zip Code"]
+										.rich_text.length > 0
+										? demographicsData.properties[
+												"Zip Code"
+										  ].rich_text[0].plain_text
+										: "",
+								user: directusUser.id,
+							},
+						);
+						// console.log({
+						// 	state: demographicsData.properties["State"].select
+						// 		.name,
+						// 	zip_code:
+						// 		demographicsData.properties["Zip Code"]
+						// 			.rich_text.length > 0
+						// 			? demographicsData.properties["Zip Code"]
+						// 					.rich_text[0].plain_text
+						// 			: "",
+						// 	directus_users_id: teamUser.id,
+						// });
+					}
 				} else {
+					console.log(
+						`User Exists ${userExists[0].id} ... attempting update`,
+					);
+					userData.notion_id = teamUser.id;
+					delete userData.password;
+					directusUser = await updateDirectusRecord(
+						userExists[0].id,
+						userData,
+					);
+					console.log("Updated successfully");
 					directusUser = userExists[0];
 				}
 
@@ -108,31 +176,37 @@ async function fetchNotionDatabases(databases) {
 					directusUser !== undefined &&
 					directusUser.id !== undefined
 				) {
-					console.log("Its an apprentice");
 					// console.log(teamUser.properties["Apprentice"]);
 					const apprenticeId =
 						teamUser.properties["Apprentice"].relation[0].id;
+					console.log("Its an apprentice:", apprenticeId);
 					const apprenticeData = await notion.pages.retrieve({
 						page_id: apprenticeId,
 					});
 					// console.log(apprenticeData);
 					// console.log(apprenticeData.properties.Status);
 					// console.log(apprenticeData.properties["ETP Date"].date)
+					// console.log(
+					// 	"Apprentice status",
+					// 	apprenticeData.properties.Status.status.name,
+					// );
+					// console.log("directus user id", directusUser.id);
 
-					const apprenticeJunctionExists =
-						await findDirectusApprenticeJunction(
-							"junction_directus_users_extended",
-							directusUser.id,
-						);
-					// console.log(apprenticeJunctionExists);
+					const apprenticeExists = await findDirectusApprentice(
+						"apprentices",
+						directusUser.id,
+					);
+					// console.log(apprenticeExists);
 					let directusApprentice;
 					// console.log(userExists[0]);
-					if (apprenticeJunctionExists[0] === undefined) {
+					if (apprenticeExists[0] === undefined) {
 						directusApprentice = await createDirectusRecord(
 							"apprentices",
 							{
-								status: apprenticeData.properties.Status.status
-									.name,
+								status: lowercaseWithUnderscores(
+									apprenticeData.properties.Status.status
+										.name,
+								),
 								ETP_hours:
 									apprenticeData.properties["ETP Hours"]
 										.number,
@@ -142,24 +216,26 @@ async function fetchNotionDatabases(databases) {
 										? apprenticeData.properties["ETP Date"]
 												.date.start
 										: null,
+								user: directusUser.id,
+								notion_id: apprenticeId,
 							},
 						);
-						const directusJunctionUserApprentice =
-							await createDirectusRecord(
-								"junction_directus_users_extended",
-								{
-									directus_users_id: directusUser.id,
-									collection: "apprentices",
-									item: directusApprentice.id,
-								},
-							);
+						// const directusJunctionUserApprentice =
+						// 	await createDirectusRecord(
+						// 		"junction_directus_users_extended",
+						// 		{
+						// 			directus_users_id: directusUser.id,
+						// 			collection: "apprentices",
+						// 			item: directusApprentice.id,
+						// 		},
+						// 	);
 					} else {
-						let directusApprenticeRequest =
-							await findDirectusApprentice(
-								"apprentices",
-								apprenticeJunctionExists[0].item,
-							);
-						directusApprentice = directusApprenticeRequest[0];
+						// let directusApprenticeRequest =
+						// 	await findDirectusApprentice(
+						// 		"apprentices",
+						// 		apprenticeJunctionExists[0].item,
+						// 	);
+						directusApprentice = apprenticeExists[0];
 					}
 					// console.log("directusApprentice", directusApprentice);
 
@@ -221,7 +297,7 @@ async function fetchNotionDatabases(databases) {
 							}
 						}
 						// console.log("standupreportcontent ", standUpReportContent);
-						// console.log(apprenticeData.id)
+						console.log(new Date(standUpReportPage.created_time));
 						const standUpReport = await createDirectusRecord(
 							"stand_up_reports",
 							{
@@ -230,7 +306,17 @@ async function fetchNotionDatabases(databases) {
 									standUpReportPage.properties["Blocked"]
 										.checkbox,
 								content: standUpReportContent,
-								creation_date: standUpReportPage.created_time,
+								date_created: standUpReportPage.created_time,
+								// creation_date: standUpReportPage.created_time,
+								// created_on: standUpReportPage.created_time,
+								status: lowercaseWithUnderscores(
+									standUpReportPage.properties.Status
+										.select !== null
+										? standUpReportPage.properties.Status
+												.select.name
+										: "Open",
+								),
+								notion_id: standUpReportPage.id,
 							},
 						);
 						//Let the registry knows
@@ -288,10 +374,10 @@ async function fetchNotionDatabases(databases) {
 					},
 				},
 			)) {
-				console.log(
-					"core curriculum",
-					coreCurriculum.properties["Children"].relation,
-				);
+				// console.log(
+				// 	"core curriculum",
+				// 	coreCurriculum.properties["Children"].relation,
+				// );
 				//First level
 				const directusCoreCurriculumProgram =
 					await createDirectusRecord("core_curriculum", {
@@ -330,16 +416,16 @@ async function fetchNotionDatabases(databases) {
 						},
 					},
 				)) {
-					console.log(
-						`Core Curriculum -${
-							coreCurriculumChildren.properties["Name"].title !==
-							null
-								? coreCurriculumChildren.properties["Name"]
-										.title[0].plain_text
-								: null
-						}`,
-						// coreCurriculumChildren,
-					);
+					// console.log(
+					// 	`Core Curriculum -${
+					// 		coreCurriculumChildren.properties["Name"].title !==
+					// 		null
+					// 			? coreCurriculumChildren.properties["Name"]
+					// 					.title[0].plain_text
+					// 			: null
+					// 	}`,
+					// 	// coreCurriculumChildren,
+					// );
 					//Second level
 					const directusCoreCurriculumProgramStage =
 						await createDirectusRecord("core_curriculum", {
@@ -380,11 +466,11 @@ async function fetchNotionDatabases(databases) {
 						coreCurriculumChildren.properties["Children"].relation
 							.length > 0
 					) {
-						console.log(
-							"Has more children",
-							coreCurriculumChildren.properties["Children"]
-								.relation,
-						);
+						// console.log(
+						// 	"Has more children",
+						// 	coreCurriculumChildren.properties["Children"]
+						// 		.relation,
+						// );
 						for await (const coreCurriculumChildrenNested of iteratePaginatedAPI(
 							notion.databases.query,
 							{
@@ -397,10 +483,10 @@ async function fetchNotionDatabases(databases) {
 								},
 							},
 						)) {
-							console.log(
-								"Core Curriculum Children Children ",
-								coreCurriculumChildrenNested,
-							);
+							// console.log(
+							// 	"Core Curriculum Children Children ",
+							// 	coreCurriculumChildrenNested,
+							// );
 							//Third level
 							const directusCoreCurriculumProgramStageResource =
 								await createDirectusRecord("core_curriculum", {
@@ -448,8 +534,7 @@ async function fetchNotionDatabases(databases) {
 									"Children"
 								].relation.length > 0
 							) {
-								console.log("Has more children children");
-
+								// console.log("Has more children children");
 								// for await (const coreCurriculumChildrenNestedNested of iteratePaginatedAPI(
 								// 	notion.databases.query,
 								// 	{
@@ -546,6 +631,36 @@ async function createDirectusRecord(collection, data) {
 			`Failed to create record in collection ${collection}:`,
 			error.message,
 		);
+		console.log({
+			Payload: data,
+			url,
+			headers,
+		});
+	}
+}
+
+async function updateDirectusRecord(userId, data) {
+	const directusAPIUrl = process.env.DIRECTUS_API_URL;
+	const directusAPIKey = process.env.DIRECTUS_API_KEY;
+
+	let url = `${directusAPIUrl}/users/${userId}`;
+	// console.log(userId, data, url);
+	const headers = {
+		Authorization: `Bearer ${directusAPIKey}`,
+		"Content-Type": "application/json",
+	};
+	try {
+		const response = await axios.patch(url, data, { headers });
+		// console.log(response);
+		console.log(`User ${userId} UPDATED successfully`);
+		return response.data.data;
+	} catch (error) {
+		console.error(`Failed to update user ${userId}:`, error.message);
+		console.log({
+			Payload: data,
+			url,
+			headers,
+		});
 	}
 }
 
@@ -575,7 +690,7 @@ async function findDirectusApprenticeJunction(collection, userId) {
 	}
 }
 
-async function findDirectusApprentice(collection, apprenticeId) {
+async function findDirectusApprentice(collection, directusUserId) {
 	const directusAPIUrl = process.env.DIRECTUS_API_URL;
 	const directusAPIKey = process.env.DIRECTUS_API_KEY;
 
@@ -588,7 +703,7 @@ async function findDirectusApprentice(collection, apprenticeId) {
 		"Content-Type": "application/json",
 	};
 	try {
-		const apiUrl = `${url}?filter[id][_eq]=${apprenticeId}`;
+		const apiUrl = `${url}?filter[user][_eq]=${directusUserId}`;
 		// const apiUrl = `${url}?${filterQuery}`;
 		const response = await axios.get(apiUrl, { headers });
 		// console.log(response);
@@ -625,6 +740,16 @@ async function findDirectusUser(collection, email) {
 			error.message,
 		);
 	}
+}
+
+function lowercaseWithUnderscores(string) {
+	// Convert the string to lowercase
+	var lowercaseString = string.toLowerCase();
+
+	// Replace spaces with underscores
+	var underscoredString = lowercaseString.replace(/ /g, "_");
+
+	return underscoredString;
 }
 
 // Usage example
