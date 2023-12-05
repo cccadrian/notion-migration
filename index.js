@@ -361,6 +361,12 @@ async function fetchNotionDatabases(databases) {
 						relation: {
 							contains: teamUser.id,
 						},
+						filter: {
+							property: "directus",
+							checkbox: {
+								equals: false,
+							},
+						},
 					},
 				});
 				if (
@@ -394,6 +400,17 @@ async function fetchNotionDatabases(databases) {
 					const directusSkillbridge = await createDirectusRecord(
 						"skillbridge",
 						skillbridgeData,
+					);
+
+					const skillbridgeUpdateResponse = await notion.pages.update(
+						{
+							page_id: notionSkillbridgeData.results[0].id,
+							properties: {
+								directus: {
+									checkbox: true,
+								},
+							},
+						},
 					);
 				}
 				//console.log(directusUser);
