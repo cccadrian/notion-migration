@@ -27,17 +27,21 @@ async function fetchNotionDatabases(databases) {
 					},
 				},
 			)) {
-				console.log(teamUser.properties["Name"].title[0].plain_text);
-
+				// console.log(
+				// 	teamUser.properties["Name"].title[0].plain_text.match(
+				// 		/^(\S+)\s+(.+)$/,
+				// 	),
+				// );
+				// teamUser.properties["Name"].title[0].plain_text.match(
+				// 	/^(\S+)\s+(.+)$/,
+				// );
+				const separatedName =
+					teamUser.properties["Name"].title[0].plain_text.match(
+						/^(\S+)\s+(.+)$/,
+					);
 				const userData = {
-					first_name:
-						teamUser.properties["Name"].title[0].plain_text.split(
-							" ",
-						)[0],
-					last_name:
-						teamUser.properties["Name"].title[0].plain_text.split(
-							" ",
-						)[1],
+					first_name: separatedName[1],
+					last_name: separatedName[2],
 					email: teamUser.properties["CCC Email"].email,
 					password: "cccareer$",
 				};
@@ -203,10 +207,7 @@ async function fetchNotionDatabases(databases) {
 						directusApprentice = await createDirectusRecord(
 							"apprentices",
 							{
-								status: lowercaseWithUnderscores(
-									apprenticeData.properties.Status.status
-										.name,
-								),
+								status: `${apprenticeData.properties.Status.status.name}`,
 								ETP_hours:
 									apprenticeData.properties["ETP Hours"]
 										.number,
@@ -216,7 +217,7 @@ async function fetchNotionDatabases(databases) {
 										? apprenticeData.properties["ETP Date"]
 												.date.start
 										: null,
-								user: directusUser.id,
+								directus_users_id: directusUser.id,
 								notion_id: apprenticeId,
 							},
 						);
@@ -297,7 +298,7 @@ async function fetchNotionDatabases(databases) {
 							}
 						}
 						// console.log("standupreportcontent ", standUpReportContent);
-						console.log(new Date(standUpReportPage.created_time));
+						// console.log(new Date(standUpReportPage.created_time));
 						const standUpReport = await createDirectusRecord(
 							"stand_up_reports",
 							{
@@ -309,13 +310,14 @@ async function fetchNotionDatabases(databases) {
 								date_created: standUpReportPage.created_time,
 								// creation_date: standUpReportPage.created_time,
 								// created_on: standUpReportPage.created_time,
-								status: lowercaseWithUnderscores(
+								status: `${
 									standUpReportPage.properties.Status
 										.select !== null
 										? standUpReportPage.properties.Status
 												.select.name
-										: "Open",
-								),
+										: "Open"
+								}`,
+
 								notion_id: standUpReportPage.id,
 							},
 						);
@@ -349,6 +351,50 @@ async function fetchNotionDatabases(databases) {
 					// 	`apprenticeUpdateResponse`,
 					// 	apprenticeUpdateResponse,
 					// );
+				}
+				//Search if the user has a skillbridge record
+
+				const notionSkillbridgeData = await notion.databases.query({
+					database_id: "730a536c78ef47098e82aa14c27862f6",
+					filter: {
+						property: "Team",
+						relation: {
+							contains: teamUser.id,
+						},
+					},
+				});
+				if (
+					notionSkillbridgeData.results !== undefined &&
+					notionSkillbridgeData.results.length > 0
+				) {
+					console.log("Has a skillbridge record.");
+					let skillbridgeData = {
+						notion_id: notionSkillbridgeData.results[0].id,
+						became_apprentice:
+							notionSkillbridgeData.results[0].properties[
+								"Became Apprentice"
+							].checkbox !== null
+								? notionSkillbridgeData.results[0].properties[
+										"Became Apprentice"
+								  ].checkbox
+								: null,
+						user: directusUser.id,
+					};
+					if (
+						notionSkillbridgeData.results[0].properties[
+							"Finish Program Date"
+						].date !== null
+					) {
+						skillbridgeData.finish_program_date =
+							notionSkillbridgeData.results[0].properties[
+								"Finish Program Date"
+							].date.start;
+					}
+
+					const directusSkillbridge = await createDirectusRecord(
+						"skillbridge",
+						skillbridgeData,
+					);
 				}
 				//console.log(directusUser);
 				//Let the registry knows
@@ -427,6 +473,14 @@ async function fetchNotionDatabases(databases) {
 					// 	// coreCurriculumChildren,
 					// );
 					//Second level
+					// console.log(
+					// 	coreCurriculumChildren.properties["Delivery Format"]
+					// 		.select !== null
+					// 		? coreCurriculumChildren.properties[
+					// 				"Delivery Format"
+					// 		  ].select.name
+					// 		: null,
+					// );
 					const directusCoreCurriculumProgramStage =
 						await createDirectusRecord("core_curriculum", {
 							notion_id: coreCurriculumChildren.id,
@@ -742,15 +796,15 @@ async function findDirectusUser(collection, email) {
 	}
 }
 
-function lowercaseWithUnderscores(string) {
-	// Convert the string to lowercase
-	var lowercaseString = string.toLowerCase();
+// function lowercaseWithUnderscores(string) {
+// 	// Convert the string to lowercase
+// 	var lowercaseString = string.toLowerCase();
 
-	// Replace spaces with underscores
-	var underscoredString = lowercaseString.replace(/ /g, "_");
+// 	// Replace spaces with underscores
+// 	// var underscoredString = lowercaseString.replace(/ /g, "_");
 
-	return underscoredString;
-}
+// 	return underscoredString;
+// }
 
 // Usage example
 async function main() {
