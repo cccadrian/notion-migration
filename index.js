@@ -15,6 +15,229 @@ async function fetchNotionDatabases(databases) {
 	for (const [name, rootPageId] of Object.entries(databases)) {
 		try {
 			let pageNumber = 0;
+			// for await (const coreCurriculum of iteratePaginatedAPI(
+			// 	notion.databases.query,
+			// 	{
+			// 		database_id: "8f10b16d6157428294b4d5fb1f900e00",
+			// 		filter: {
+			// 			property: "Parent",
+			// 			relation: {
+			// 				is_empty: true,
+			// 			},
+			// 		},
+			// 	},
+			// )) {
+			// 	// console.log(
+			// 	// 	"core curriculum",
+			// 	// 	coreCurriculum.properties["Children"].relation,
+			// 	// );
+			// 	//First level
+			// 	const directusCoreCurriculumProgram =
+			// 		await createDirectusRecord("core_curriculum", {
+			// 			notion_id: coreCurriculum.id,
+			// 			name:
+			// 				coreCurriculum.properties["Name"].title !== null
+			// 					? coreCurriculum.properties["Name"].title[0]
+			// 							.plain_text
+			// 					: null,
+			// 			report_types:
+			// 				coreCurriculum.properties["Report Types"]
+			// 					.multi_select !== null
+			// 					? coreCurriculum.properties["Report Types"]
+			// 							.multi_select[0].name
+			// 					: null,
+			// 			type:
+			// 				coreCurriculum.properties["Type"].select !== null
+			// 					? coreCurriculum.properties["Type"].select.name
+			// 					: null,
+			// 			delivery_format:
+			// 				coreCurriculum.properties["Delivery Format"]
+			// 					.select !== null
+			// 					? coreCurriculum.properties["Delivery Format"]
+			// 							.select.name
+			// 					: null,
+			// 		});
+			// 	for await (const coreCurriculumChildren of iteratePaginatedAPI(
+			// 		notion.databases.query,
+			// 		{
+			// 			database_id: "8f10b16d6157428294b4d5fb1f900e00",
+			// 			filter: {
+			// 				property: "Parent",
+			// 				relation: {
+			// 					contains: coreCurriculum.id,
+			// 				},
+			// 			},
+			// 		},
+			// 	)) {
+			// 		const directusCoreCurriculumProgramStage =
+			// 			await createDirectusRecord("core_curriculum", {
+			// 				notion_id: coreCurriculumChildren.id,
+			// 				name:
+			// 					coreCurriculumChildren.properties["Name"]
+			// 						.title !== null
+			// 						? coreCurriculumChildren.properties["Name"]
+			// 								.title[0].plain_text
+			// 						: null,
+			// 				report_types:
+			// 					coreCurriculumChildren.properties[
+			// 						"Report Types"
+			// 					].multi_select !== null
+			// 						? coreCurriculumChildren.properties[
+			// 								"Report Types"
+			// 						  ].multi_select[0].name
+			// 						: null,
+			// 				type:
+			// 					coreCurriculumChildren.properties["Type"]
+			// 						.select !== null
+			// 						? coreCurriculumChildren.properties["Type"]
+			// 								.select.name
+			// 						: null,
+			// 				delivery_format:
+			// 					coreCurriculumChildren.properties[
+			// 						"Delivery Format"
+			// 					].select !== null
+			// 						? coreCurriculumChildren.properties[
+			// 								"Delivery Format"
+			// 						  ].select.name
+			// 						: null,
+			// 				parent: directusCoreCurriculumProgram.id,
+			// 			});
+			// 		if (
+			// 			coreCurriculumChildren.properties["Children"]
+			// 				.relation !== undefined &&
+			// 			coreCurriculumChildren.properties["Children"].relation
+			// 				.length > 0
+			// 		) {
+			// 			// console.log(
+			// 			// 	"Has more children",
+			// 			// 	coreCurriculumChildren.properties["Children"]
+			// 			// 		.relation,
+			// 			// );
+			// 			for await (const coreCurriculumChildrenNested of iteratePaginatedAPI(
+			// 				notion.databases.query,
+			// 				{
+			// 					database_id: "8f10b16d6157428294b4d5fb1f900e00",
+			// 					filter: {
+			// 						property: "Parent",
+			// 						relation: {
+			// 							contains: coreCurriculumChildren.id,
+			// 						},
+			// 					},
+			// 				},
+			// 			)) {
+			// 				// console.log(
+			// 				// 	"Core Curriculum Children Children ",
+			// 				// 	coreCurriculumChildrenNested,
+			// 				// );
+			// 				//Third level
+			// 				const directusCoreCurriculumProgramStageResource =
+			// 					await createDirectusRecord("core_curriculum", {
+			// 						notion_id: coreCurriculumChildrenNested.id,
+			// 						name:
+			// 							coreCurriculumChildrenNested.properties[
+			// 								"Name"
+			// 							].title !== null
+			// 								? coreCurriculumChildrenNested
+			// 										.properties["Name"].title[0]
+			// 										.plain_text
+			// 								: null,
+			// 						report_types:
+			// 							coreCurriculumChildrenNested.properties[
+			// 								"Report Types"
+			// 							].multi_select !== null
+			// 								? coreCurriculumChildrenNested
+			// 										.properties["Report Types"]
+			// 										.multi_select[0].name
+			// 								: null,
+			// 						type:
+			// 							coreCurriculumChildrenNested.properties[
+			// 								"Type"
+			// 							].select !== null
+			// 								? coreCurriculumChildrenNested
+			// 										.properties["Type"].select
+			// 										.name
+			// 								: null,
+			// 						delivery_format:
+			// 							coreCurriculumChildrenNested.properties[
+			// 								"Delivery Format"
+			// 							].select !== null
+			// 								? coreCurriculumChildrenNested
+			// 										.properties[
+			// 										"Delivery Format"
+			// 								  ].select.name
+			// 								: null,
+			// 						parent: directusCoreCurriculumProgramStage.id,
+			// 					});
+			// 				if (
+			// 					coreCurriculumChildrenNested.properties[
+			// 						"Children"
+			// 					].relation !== undefined &&
+			// 					coreCurriculumChildrenNested.properties[
+			// 						"Children"
+			// 					].relation.length > 0
+			// 				) {
+			// 					// console.log("Has more children children");
+			// 					// for await (const coreCurriculumChildrenNestedNested of iteratePaginatedAPI(
+			// 					// 	notion.databases.query,
+			// 					// 	{
+			// 					// 		database_id:
+			// 					// 			"8f10b16d6157428294b4d5fb1f900e00",
+			// 					// 		filter: {
+			// 					// 			property: "Parent",
+			// 					// 			relation: {
+			// 					// 				contains:
+			// 					// 					coreCurriculumChildrenNested.id,
+			// 					// 			},
+			// 					// 		},
+			// 					// 	},
+			// 					// )) {
+			// 					// 	console.log(
+			// 					// 		"Core Curriculum Children Children Children ",
+			// 					// 		directusCoreCurriculumChildrenNested,
+			// 					// 	);
+			// 					// 	//Fourth Level
+			// 					// 	const directusCoreCurriculumChildrenNestedNested =
+			// 					// 		await createDirectusRecord(
+			// 					// 			"core_curriculum",
+			// 					// 			{
+			// 					// 				notion_id:
+			// 					// 					directusCoreCurriculumChildrenNested
+			// 					// 						.properties["ID"],
+			// 					// 				name: directusCoreCurriculumChildrenNested
+			// 					// 					.properties["Name"].title[0]
+			// 					// 					.plain_text,
+			// 					// 				report_types:
+			// 					// 					directusCoreCurriculumChildrenNested
+			// 					// 						.properties["Name"]
+			// 					// 						.title[0].plain_text,
+			// 					// 				parent: directusCoreCurriculumChildren.id,
+			// 					// 				type: directusCoreCurriculumChildrenNested
+			// 					// 					.properties["Name"].title[0]
+			// 					// 					.plain_text,
+			// 					// 				delivery_format:
+			// 					// 					directusCoreCurriculumChildrenNested
+			// 					// 						.properties["Name"]
+			// 					// 						.title[0].plain_text,
+			// 					// 			},
+			// 					// 		);
+			// 					// 	if (
+			// 					// 		coreCurriculumChildrenNestedNested
+			// 					// 			.properties["Children"].relation !==
+			// 					// 			undefined &&
+			// 					// 		coreCurriculumChildrenNestedNested
+			// 					// 			.properties["Children"].relation
+			// 					// 			.length > 0
+			// 					// 	) {
+			// 					// 		console.log(
+			// 					// 			"Has more children children children",
+			// 					// 		);
+			// 					// 	}
+			// 					// }
+			// 				}
+			// 			}
+			// 		}
+			// 	}
+			// }
 			for await (const teamUser of iteratePaginatedAPI(
 				notion.databases.query,
 				{
@@ -35,16 +258,27 @@ async function fetchNotionDatabases(databases) {
 				// teamUser.properties["Name"].title[0].plain_text.match(
 				// 	/^(\S+)\s+(.+)$/,
 				// );
-				const separatedName =
-					teamUser.properties["Name"].title[0].plain_text.match(
-						/^(\S+)\s+(.+)$/,
-					);
-				const userData = {
-					first_name: separatedName[1],
-					last_name: separatedName[2],
+				console.log(teamUser.properties["Name"]);
+				let userData = {
 					email: teamUser.properties["CCC Email"].email,
 					password: "cccareer$",
 				};
+				if (
+					teamUser.properties["Name"].title !== undefined &&
+					teamUser.properties["Name"].title.length > 1
+				) {
+					userData.first_name =
+						teamUser.properties["Name"].title[0].plain_text.trim();
+					userData.last_name =
+						teamUser.properties["Name"].title[1].plain_text.trim();
+				} else if (teamUser.properties["Name"].title.length === 1) {
+					const separatedName =
+						teamUser.properties["Name"].title[0].plain_text.match(
+							/^(\S+)\s+(.+)$/,
+						);
+					userData.first_name = separatedName[1];
+					userData.last_name = separatedName[2];
+				}
 
 				// if (teamUser.properties["Personal Email"].email !== undefined) {
 				// 	// console.log(teamUser.properties["Personal Email"].email);
@@ -207,7 +441,10 @@ async function fetchNotionDatabases(databases) {
 						directusApprentice = await createDirectusRecord(
 							"apprentices",
 							{
-								status: `${apprenticeData.properties.Status.status.name}`,
+								current_status: `${lowercaseWithUnderscores(
+									apprenticeData.properties.Status.status
+										.name,
+								)}`,
 								ETP_hours:
 									apprenticeData.properties["ETP Hours"]
 										.number,
@@ -217,7 +454,7 @@ async function fetchNotionDatabases(databases) {
 										? apprenticeData.properties["ETP Date"]
 												.date.start
 										: null,
-								directus_users_id: directusUser.id,
+								user: directusUser.id,
 								notion_id: apprenticeId,
 							},
 						);
@@ -277,6 +514,7 @@ async function fetchNotionDatabases(databases) {
 						)) {
 							// Do something with block.
 							// console.log("block", block);
+
 							if (block.type === "heading_2") {
 								if (
 									block.heading_2.rich_text[0] !== undefined
@@ -299,27 +537,55 @@ async function fetchNotionDatabases(databases) {
 						}
 						// console.log("standupreportcontent ", standUpReportContent);
 						// console.log(new Date(standUpReportPage.created_time));
+						// get curriculum resource
+						// console.log(
+						// 	"Resources",
+						// 	standUpReportPage.properties["Resources"]
+						// 		.relation[1],
+						// );
+						let surData = {
+							apprentice: directusApprentice.id,
+							blocked:
+								standUpReportPage.properties["Blocked"]
+									.checkbox,
+							content: standUpReportContent,
+							date_created: standUpReportPage.created_time,
+							// creation_date: standUpReportPage.created_time,
+							// created_on: standUpReportPage.created_time,
+							current_status: `${
+								standUpReportPage.properties.Status.select !==
+								null
+									? standUpReportPage.properties.Status.select
+											.name
+									: "Open"
+							}`,
+
+							notion_id: standUpReportPage.id,
+						};
+						if (
+							standUpReportPage.properties["Resources"]
+								.relation !== undefined &&
+							standUpReportPage.properties["Resources"].relation
+								.length > 0
+						) {
+							//search for resource
+							const resource = await findDirectusResource(
+								"core_curriculum",
+								standUpReportPage.properties["Resources"]
+									.relation[1].id,
+							);
+							console.log(resource);
+							surData.curriculum_resource = resource[0].id;
+							// surData.curriculum_resource =
+							// 	standUpReportPage.properties[
+							// 		"Resources"
+							// 	].relation[1].id;
+						}
+						console.log("Final report data", surData);
+
 						const standUpReport = await createDirectusRecord(
 							"stand_up_reports",
-							{
-								apprentice: directusApprentice.id,
-								blocked:
-									standUpReportPage.properties["Blocked"]
-										.checkbox,
-								content: standUpReportContent,
-								date_created: standUpReportPage.created_time,
-								// creation_date: standUpReportPage.created_time,
-								// created_on: standUpReportPage.created_time,
-								status: `${
-									standUpReportPage.properties.Status
-										.select !== null
-										? standUpReportPage.properties.Status
-												.select.name
-										: "Open"
-								}`,
-
-								notion_id: standUpReportPage.id,
-							},
+							surData,
 						);
 						//Let the registry knows
 						const standUpReportResponse = await notion.pages.update(
@@ -357,16 +623,20 @@ async function fetchNotionDatabases(databases) {
 				const notionSkillbridgeData = await notion.databases.query({
 					database_id: "730a536c78ef47098e82aa14c27862f6",
 					filter: {
-						property: "Team",
-						relation: {
-							contains: teamUser.id,
-						},
-						filter: {
-							property: "directus",
-							checkbox: {
-								equals: false,
+						and: [
+							{
+								property: "Team",
+								relation: {
+									contains: teamUser.id,
+								},
 							},
-						},
+							{
+								property: "directus",
+								checkbox: {
+									equals: false,
+								},
+							},
+						],
 					},
 				});
 				if (
@@ -424,248 +694,6 @@ async function fetchNotionDatabases(databases) {
 					},
 				});
 				// console.log(`userUpdateResponse`, userUpdateResponse);
-			}
-			for await (const coreCurriculum of iteratePaginatedAPI(
-				notion.databases.query,
-				{
-					database_id: "8f10b16d6157428294b4d5fb1f900e00",
-					filter: {
-						property: "Parent",
-						relation: {
-							is_empty: true,
-						},
-					},
-				},
-			)) {
-				// console.log(
-				// 	"core curriculum",
-				// 	coreCurriculum.properties["Children"].relation,
-				// );
-				//First level
-				const directusCoreCurriculumProgram =
-					await createDirectusRecord("core_curriculum", {
-						notion_id: coreCurriculum.id,
-						name:
-							coreCurriculum.properties["Name"].title !== null
-								? coreCurriculum.properties["Name"].title[0]
-										.plain_text
-								: null,
-						report_types:
-							coreCurriculum.properties["Report Types"]
-								.multi_select !== null
-								? coreCurriculum.properties["Report Types"]
-										.multi_select[0].name
-								: null,
-						type:
-							coreCurriculum.properties["Type"].select !== null
-								? coreCurriculum.properties["Type"].select.name
-								: null,
-						delivery_format:
-							coreCurriculum.properties["Delivery Format"]
-								.select !== null
-								? coreCurriculum.properties["Delivery Format"]
-										.select.name
-								: null,
-					});
-				for await (const coreCurriculumChildren of iteratePaginatedAPI(
-					notion.databases.query,
-					{
-						database_id: "8f10b16d6157428294b4d5fb1f900e00",
-						filter: {
-							property: "Parent",
-							relation: {
-								contains: coreCurriculum.id,
-							},
-						},
-					},
-				)) {
-					// console.log(
-					// 	`Core Curriculum -${
-					// 		coreCurriculumChildren.properties["Name"].title !==
-					// 		null
-					// 			? coreCurriculumChildren.properties["Name"]
-					// 					.title[0].plain_text
-					// 			: null
-					// 	}`,
-					// 	// coreCurriculumChildren,
-					// );
-					//Second level
-					// console.log(
-					// 	coreCurriculumChildren.properties["Delivery Format"]
-					// 		.select !== null
-					// 		? coreCurriculumChildren.properties[
-					// 				"Delivery Format"
-					// 		  ].select.name
-					// 		: null,
-					// );
-					const directusCoreCurriculumProgramStage =
-						await createDirectusRecord("core_curriculum", {
-							notion_id: coreCurriculumChildren.id,
-							name:
-								coreCurriculumChildren.properties["Name"]
-									.title !== null
-									? coreCurriculumChildren.properties["Name"]
-											.title[0].plain_text
-									: null,
-							report_types:
-								coreCurriculumChildren.properties[
-									"Report Types"
-								].multi_select !== null
-									? coreCurriculumChildren.properties[
-											"Report Types"
-									  ].multi_select[0].name
-									: null,
-							type:
-								coreCurriculumChildren.properties["Type"]
-									.select !== null
-									? coreCurriculumChildren.properties["Type"]
-											.select.name
-									: null,
-							delivery_format:
-								coreCurriculumChildren.properties[
-									"Delivery Format"
-								].select !== null
-									? coreCurriculumChildren.properties[
-											"Delivery Format"
-									  ].select.name
-									: null,
-							parent: directusCoreCurriculumProgram.id,
-						});
-					if (
-						coreCurriculumChildren.properties["Children"]
-							.relation !== undefined &&
-						coreCurriculumChildren.properties["Children"].relation
-							.length > 0
-					) {
-						// console.log(
-						// 	"Has more children",
-						// 	coreCurriculumChildren.properties["Children"]
-						// 		.relation,
-						// );
-						for await (const coreCurriculumChildrenNested of iteratePaginatedAPI(
-							notion.databases.query,
-							{
-								database_id: "8f10b16d6157428294b4d5fb1f900e00",
-								filter: {
-									property: "Parent",
-									relation: {
-										contains: coreCurriculumChildren.id,
-									},
-								},
-							},
-						)) {
-							// console.log(
-							// 	"Core Curriculum Children Children ",
-							// 	coreCurriculumChildrenNested,
-							// );
-							//Third level
-							const directusCoreCurriculumProgramStageResource =
-								await createDirectusRecord("core_curriculum", {
-									notion_id: coreCurriculumChildrenNested.id,
-									name:
-										coreCurriculumChildrenNested.properties[
-											"Name"
-										].title !== null
-											? coreCurriculumChildrenNested
-													.properties["Name"].title[0]
-													.plain_text
-											: null,
-									report_types:
-										coreCurriculumChildrenNested.properties[
-											"Report Types"
-										].multi_select !== null
-											? coreCurriculumChildrenNested
-													.properties["Report Types"]
-													.multi_select[0].name
-											: null,
-									type:
-										coreCurriculumChildrenNested.properties[
-											"Type"
-										].select !== null
-											? coreCurriculumChildrenNested
-													.properties["Type"].select
-													.name
-											: null,
-									delivery_format:
-										coreCurriculumChildrenNested.properties[
-											"Delivery Format"
-										].select !== null
-											? coreCurriculumChildrenNested
-													.properties[
-													"Delivery Format"
-											  ].select.name
-											: null,
-									parent: directusCoreCurriculumProgramStage.id,
-								});
-							if (
-								coreCurriculumChildrenNested.properties[
-									"Children"
-								].relation !== undefined &&
-								coreCurriculumChildrenNested.properties[
-									"Children"
-								].relation.length > 0
-							) {
-								// console.log("Has more children children");
-								// for await (const coreCurriculumChildrenNestedNested of iteratePaginatedAPI(
-								// 	notion.databases.query,
-								// 	{
-								// 		database_id:
-								// 			"8f10b16d6157428294b4d5fb1f900e00",
-								// 		filter: {
-								// 			property: "Parent",
-								// 			relation: {
-								// 				contains:
-								// 					coreCurriculumChildrenNested.id,
-								// 			},
-								// 		},
-								// 	},
-								// )) {
-								// 	console.log(
-								// 		"Core Curriculum Children Children Children ",
-								// 		directusCoreCurriculumChildrenNested,
-								// 	);
-								// 	//Fourth Level
-								// 	const directusCoreCurriculumChildrenNestedNested =
-								// 		await createDirectusRecord(
-								// 			"core_curriculum",
-								// 			{
-								// 				notion_id:
-								// 					directusCoreCurriculumChildrenNested
-								// 						.properties["ID"],
-								// 				name: directusCoreCurriculumChildrenNested
-								// 					.properties["Name"].title[0]
-								// 					.plain_text,
-								// 				report_types:
-								// 					directusCoreCurriculumChildrenNested
-								// 						.properties["Name"]
-								// 						.title[0].plain_text,
-								// 				parent: directusCoreCurriculumChildren.id,
-								// 				type: directusCoreCurriculumChildrenNested
-								// 					.properties["Name"].title[0]
-								// 					.plain_text,
-								// 				delivery_format:
-								// 					directusCoreCurriculumChildrenNested
-								// 						.properties["Name"]
-								// 						.title[0].plain_text,
-								// 			},
-								// 		);
-								// 	if (
-								// 		coreCurriculumChildrenNestedNested
-								// 			.properties["Children"].relation !==
-								// 			undefined &&
-								// 		coreCurriculumChildrenNestedNested
-								// 			.properties["Children"].relation
-								// 			.length > 0
-								// 	) {
-								// 		console.log(
-								// 			"Has more children children children",
-								// 		);
-								// 	}
-								// }
-							}
-						}
-					}
-				}
 			}
 		} catch (error) {
 			console.error(
@@ -813,15 +841,41 @@ async function findDirectusUser(collection, email) {
 	}
 }
 
-// function lowercaseWithUnderscores(string) {
-// 	// Convert the string to lowercase
-// 	var lowercaseString = string.toLowerCase();
+async function findDirectusResource(collection, notion_id) {
+	const directusAPIUrl = process.env.DIRECTUS_API_URL;
+	const directusAPIKey = process.env.DIRECTUS_API_KEY;
 
-// 	// Replace spaces with underscores
-// 	// var underscoredString = lowercaseString.replace(/ /g, "_");
+	let url = `${directusAPIUrl}/items/${collection}`;
+	if (collection === "users") {
+		url = `${directusAPIUrl}/${collection}`;
+	}
+	const headers = {
+		Authorization: `Bearer ${directusAPIKey}`,
+		"Content-Type": "application/json",
+	};
+	try {
+		const apiUrl = `${url}?filter[notion_id][_eq]=${notion_id}`;
+		// const apiUrl = `${url}?${filterQuery}`;
+		const response = await axios.get(apiUrl, { headers });
+		// console.log(response);
+		return response.data.data;
+	} catch (error) {
+		console.error(
+			`Failed to fetch record in collection ${collection}:`,
+			error.message,
+		);
+	}
+}
 
-// 	return underscoredString;
-// }
+function lowercaseWithUnderscores(string) {
+	// Convert the string to lowercase
+	var lowercaseString = string.toLowerCase();
+
+	// Replace spaces with underscores
+	var underscoredString = lowercaseString.replace(/ /g, "_");
+
+	return underscoredString;
+}
 
 // Usage example
 async function main() {
